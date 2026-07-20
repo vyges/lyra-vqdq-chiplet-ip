@@ -1,0 +1,516 @@
+{
+  "$schema": "https://vyges.com/schema/v1/vyges-metadata.schema.json",
+  "x-version": "1.0.0",
+  "name": "vyges/lyra-vqdq",
+  "version": "1.0.0",
+  "description": "Vector Quantizer/Dequantizer IP block based on Google's Lyra codec, implementing efficient vector quantization and dequantization for neural audio codecs",
+  "license": "Apache-2.0",
+  "template": "vyges-ip-template@1.0.0",
+  "target": ["asic"],
+  "design_type": ["digital", "chiplet"],
+  "maturity": "prototype",
+  "created": "2025-01-27T00:00:00Z",
+  "updated": "2025-01-27T00:00:00Z",
+  "source": {
+    "type": "git",
+    "url": "https://github.com/google/lyra",
+    "commit": "main",
+    "private": false,
+    "containsEncryptedPayload": false,
+    "indexing": true
+  },
+  "sourceFiles": [
+    {
+      "path": "rtl/lyra_vqdq.sv",
+      "type": "rtl",
+      "owner": "Vyges Team",
+      "version": "1.0.0",
+      "license": "Apache-2.0",
+      "block": "lyra",
+      "vendor": {
+        "name": "Vyges Inc.",
+        "docs": [
+          {
+            "title": "Lyra VQ/DQ IP Documentation",
+            "url": "https://vyges.com/docs/lyra-vqdq",
+            "type": "user_guide"
+          }
+        ],
+        "contact": {
+          "email": "team@vyges.com",
+          "url": "https://vyges.com/support"
+        }
+      }
+    },
+    {
+      "path": "tb/cocotb/test_lyra_vqdq.py",
+      "type": "testbench",
+      "owner": "Vyges Team",
+      "version": "1.0.0",
+      "license": "Apache-2.0",
+      "block": "lyra"
+    },
+    {
+      "path": "integration/lyra_vqdq_wrapper.v",
+      "type": "rtl",
+      "owner": "Vyges Team",
+      "version": "1.0.0",
+      "license": "Apache-2.0",
+      "block": "lyra"
+    },
+    {
+      "path": "constraints/constraints.sdc",
+      "type": "constraint",
+      "owner": "Vyges Team",
+      "version": "1.0.0",
+      "license": "Apache-2.0",
+      "block": "lyra"
+    },
+    {
+      "path": "docs/lyra-vqdq-architecture.md",
+      "type": "doc",
+      "owner": "Vyges Team",
+      "version": "1.0.0",
+      "license": "Apache-2.0",
+      "block": "lyra"
+    },
+    {
+      "path": "docs/lyra-vqdq-design_spec.md",
+      "type": "doc",
+      "owner": "Vyges Team",
+      "version": "1.0.0",
+      "license": "Apache-2.0",
+      "block": "lyra"
+    },
+    {
+      "path": "integration/lyra_vqdq_chiplet_wrapper.v",
+      "type": "rtl",
+      "owner": "Vyges Team",
+      "version": "1.0.0",
+      "license": "Apache-2.0",
+      "block": "lyra",
+      "description": "Chiplet integration wrapper with UCIe interface and power management"
+    }
+  ],
+  "maintainers": [
+    {
+      "name": "Vyges Team",
+      "email": "team@vyges.com",
+      "github": "vyges-org"
+    }
+  ],
+  "branding": {
+    "provider": "Vyges Inc.",
+    "logo": "https://vyges.com/assets/logo.svg",
+    "website": "https://vyges.com/ip/lyra-vqdq",
+    "usage": "Use of the logo is permitted for attribution or compatibility references only."
+  },
+  "interfaces": [
+    {
+      "type": "clock",
+      "direction": "input",
+      "protocol": "Single-ended",
+      "signals": [
+        { "name": "clk_i", "direction": "input", "width": 1, "description": "System clock input" }
+      ]
+    },
+    {
+      "type": "reset",
+      "direction": "input",
+      "protocol": "Active-low",
+      "signals": [
+        { "name": "reset_n_i", "direction": "input", "width": 1, "description": "Active-low reset signal" }
+      ]
+    },
+    {
+      "type": "axi4_stream",
+      "direction": "input",
+      "protocol": "AXI4-Stream",
+      "signals": [
+        { "name": "s_axis_tdata_i", "direction": "input", "width": "VECTOR_WIDTH*DATA_WIDTH", "description": "Input vector data" },
+        { "name": "s_axis_tvalid_i", "direction": "input", "width": 1, "description": "Input data valid" },
+        { "name": "s_axis_tready_o", "direction": "output", "width": 1, "description": "Input ready" },
+        { "name": "s_axis_tlast_i", "direction": "input", "width": 1, "description": "Input last signal" }
+      ]
+    },
+    {
+      "type": "axi4_stream",
+      "direction": "output",
+      "protocol": "AXI4-Stream",
+      "signals": [
+        { "name": "m_axis_tdata_o", "direction": "output", "width": "CODEBOOK_INDEX_WIDTH", "description": "Output codebook index (quantization) or reconstructed vector (dequantization)" },
+        { "name": "m_axis_tvalid_o", "direction": "output", "width": 1, "description": "Output data valid" },
+        { "name": "m_axis_tready_i", "direction": "input", "width": 1, "description": "Output ready" },
+        { "name": "m_axis_tlast_o", "direction": "output", "width": 1, "description": "Output last signal" }
+      ]
+    },
+    {
+      "type": "axi4_lite",
+      "direction": "input",
+      "protocol": "AXI4-Lite",
+      "signals": [
+        { "name": "s_axi_awaddr_i", "direction": "input", "width": "ADDR_WIDTH", "description": "Write address" },
+        { "name": "s_axi_awvalid_i", "direction": "input", "width": 1, "description": "Write address valid" },
+        { "name": "s_axi_awready_o", "direction": "output", "width": 1, "description": "Write address ready" },
+        { "name": "s_axi_wdata_i", "direction": "input", "width": 32, "description": "Write data" },
+        { "name": "s_axi_wstrb_i", "direction": "input", "width": 4, "description": "Write strobe" },
+        { "name": "s_axi_wvalid_i", "direction": "input", "width": 1, "description": "Write data valid" },
+        { "name": "s_axi_wready_o", "direction": "output", "width": 1, "description": "Write data ready" },
+        { "name": "s_axi_bresp_o", "direction": "output", "width": 2, "description": "Write response" },
+        { "name": "s_axi_bvalid_o", "direction": "output", "width": 1, "description": "Write response valid" },
+        { "name": "s_axi_bready_i", "direction": "input", "width": 1, "description": "Write response ready" },
+        { "name": "s_axi_araddr_i", "direction": "input", "width": "ADDR_WIDTH", "description": "Read address" },
+        { "name": "s_axi_arvalid_i", "direction": "input", "width": 1, "description": "Read address valid" },
+        { "name": "s_axi_arready_o", "direction": "output", "width": 1, "description": "Read address ready" },
+        { "name": "s_axi_rdata_o", "direction": "output", "width": 32, "description": "Read data" },
+        { "name": "s_axi_rresp_o", "direction": "output", "width": 2, "description": "Read response" },
+        { "name": "s_axi_rvalid_o", "direction": "output", "width": 1, "description": "Read data valid" },
+        { "name": "s_axi_rready_i", "direction": "input", "width": 1, "description": "Read data ready" }
+      ]
+    },
+    {
+      "type": "control",
+      "direction": "input",
+      "protocol": "Standard",
+      "signals": [
+        { "name": "mode_i", "direction": "input", "width": 1, "description": "0=Quantization, 1=Dequantization" },
+        { "name": "start_i", "direction": "input", "width": 1, "description": "Start operation" },
+        { "name": "clear_i", "direction": "input", "width": 1, "description": "Clear operation" }
+      ]
+    },
+    {
+      "type": "status",
+      "direction": "output",
+      "protocol": "Standard",
+      "signals": [
+        { "name": "busy_o", "direction": "output", "width": 1, "description": "Module busy" },
+        { "name": "done_o", "direction": "output", "width": 1, "description": "Operation complete" },
+        { "name": "error_o", "direction": "output", "width": 1, "description": "Error flag" }
+      ]
+    },
+    {
+      "type": "chiplet_interface",
+      "direction": "bidirectional",
+      "protocol": "UCIe",
+      "signals": [
+        { "name": "chiplet_clk_i", "direction": "input", "width": 1, "description": "Chiplet interface clock" },
+        { "name": "chiplet_reset_n_i", "direction": "input", "width": 1, "description": "Chiplet interface reset" },
+        { "name": "chiplet_tx_data_o", "direction": "output", "width": 64, "description": "Transmit data to other chiplets" },
+        { "name": "chiplet_tx_valid_o", "direction": "output", "width": 1, "description": "Transmit data valid" },
+        { "name": "chiplet_tx_ready_i", "direction": "input", "width": 1, "description": "Transmit ready from other chiplets" },
+        { "name": "chiplet_rx_data_i", "direction": "input", "width": 64, "description": "Receive data from other chiplets" },
+        { "name": "chiplet_rx_valid_i", "direction": "input", "width": 1, "description": "Receive data valid" },
+        { "name": "chiplet_rx_ready_o", "direction": "output", "width": 1, "description": "Receive ready to other chiplets" }
+      ]
+    },
+    {
+      "type": "power_management",
+      "direction": "bidirectional",
+      "protocol": "Standard",
+      "signals": [
+        { "name": "power_enable_i", "direction": "input", "width": 1, "description": "Power enable signal" },
+        { "name": "sleep_mode_i", "direction": "input", "width": 1, "description": "Sleep mode control" },
+        { "name": "power_status_o", "direction": "output", "width": 2, "description": "Power status (00=off, 01=standby, 10=active, 11=error)" },
+        { "name": "thermal_status_o", "direction": "output", "width": 4, "description": "Thermal status and temperature encoding" }
+      ]
+    }
+  ],
+  "parameters": [
+    {
+      "name": "VECTOR_WIDTH",
+      "type": "int",
+      "default": 16,
+      "description": "Number of elements in input vector",
+      "range": { "min": 8, "max": 64 },
+      "units": "elements",
+      "required": false
+    },
+    {
+      "name": "DATA_WIDTH",
+      "type": "int",
+      "default": 16,
+      "description": "Bit width of each vector element (fixed-point)",
+      "range": { "min": 8, "max": 32 },
+      "units": "bits",
+      "required": false
+    },
+    {
+      "name": "CODEBOOK_SIZE",
+      "type": "int",
+      "default": 256,
+      "description": "Number of codebook entries",
+      "range": { "min": 64, "max": 65536 },
+      "units": "entries",
+      "required": false
+    },
+    {
+      "name": "CODEBOOK_INDEX_WIDTH",
+      "type": "int",
+      "default": 8,
+      "description": "Width of codebook index",
+      "range": { "min": 6, "max": 16 },
+      "units": "bits",
+      "required": false
+    },
+    {
+      "name": "ADDR_WIDTH",
+      "type": "int",
+      "default": 12,
+      "description": "Width of AXI address bus",
+      "range": { "min": 8, "max": 16 },
+      "units": "bits",
+      "required": false
+    },
+    {
+      "name": "FRACTIONAL_BITS",
+      "type": "int",
+      "default": 8,
+      "description": "Number of fractional bits in fixed-point representation",
+      "range": { "min": 4, "max": 16 },
+      "units": "bits",
+      "required": false
+    },
+    {
+      "name": "PIPELINE_STAGES",
+      "type": "int",
+      "default": 3,
+      "description": "Number of pipeline stages for processing",
+      "range": { "min": 1, "max": 8 },
+      "units": "stages",
+      "required": false
+    },
+    {
+      "name": "CHIPLET_ID",
+      "type": "int",
+      "default": 0,
+      "description": "Unique identifier for chiplet instance",
+      "range": { "min": 0, "max": 255 },
+      "units": "id",
+      "required": false
+    },
+    {
+      "name": "UCIE_LANES",
+      "type": "int",
+      "default": 16,
+      "description": "Number of UCIe lanes for chiplet communication",
+      "range": { "min": 4, "max": 64 },
+      "units": "lanes",
+      "required": false
+    },
+    {
+      "name": "POWER_DOMAINS",
+      "type": "int",
+      "default": 2,
+      "description": "Number of power domains for power management",
+      "range": { "min": 1, "max": 8 },
+      "units": "domains",
+      "required": false
+    }
+  ],
+  "test": {
+    "coverage": true,
+    "testbenches": ["cocotb"],
+    "simulators": ["verilator", "icarus"],
+    "status": "passing",
+    "cocotb_integration": {
+      "status": "verified",
+      "version": "1.8.0",
+      "simulators": ["icarus", "verilator"],
+      "makefile_approach": "standard",
+      "fallback_support": true
+    }
+  },
+  "flows": {
+    "verilator": {
+      "status": "verified",
+      "cocotb_integration": "working"
+    },
+    "icarus": {
+      "status": "verified",
+      "cocotb_integration": "working"
+    },
+    "openlane": {
+      "pdks": ["sky130B"],
+      "status": "template"
+    },
+    "chiplet": {
+      "status": "verified",
+      "protocols": ["UCIe", "AIB", "BoW"],
+      "integration": "chiplet_wrapper",
+      "power_management": "multi_domain",
+      "thermal_management": "active"
+    }
+  },
+  "asic": {
+    "flavor": "digital",
+    "pdks": ["sky130B"],
+    "synthesis_tool": "openlane",
+    "clock_freq_mhz": 200,
+    "constraints": ["constraints.sdc"],
+    "tools": ["yosys", "openroad"]
+  },
+  "chiplet": {
+    "type": "functional",
+    "protocols": ["UCIe", "AIB", "BoW"],
+    "interfaces": ["AXI4-Stream", "AXI4-Lite", "UCIe"],
+    "power_domains": 2,
+    "thermal_zones": 1,
+    "integration": {
+      "package": "organic_substrate",
+      "bump_pitch": "130um",
+      "bump_size": "100um",
+      "interposer": "silicon",
+      "routing": "redistribution_layer"
+    },
+    "communication": {
+      "bandwidth": "1000",
+      "unit": "Gbps",
+      "latency": "100",
+      "latency_unit": "ns",
+      "protocol_overhead": "5",
+      "unit_overhead": "%"
+    },
+    "power": {
+      "active": "15",
+      "standby": "1",
+      "sleep": "0.1",
+      "unit": "mW",
+      "voltage_domains": ["0.8V", "1.2V"]
+    },
+    "thermal": {
+      "max_temperature": "125",
+      "unit": "°C",
+      "thermal_resistance": "2.5",
+      "thermal_unit": "°C/W",
+      "cooling": "passive"
+    }
+  },
+  "integration": {
+    "examples": [
+      {
+        "target": "simulation",
+        "wrapper": "integration/lyra_vqdq_wrapper.v",
+        "tb": "tb/cocotb/test_lyra_vqdq.py"
+      },
+      {
+        "target": "rtl",
+        "module": "rtl/lyra_vqdq.sv",
+        "description": "Vector Quantizer/Dequantizer core with AXI interfaces"
+      },
+      {
+        "target": "chiplet",
+        "wrapper": "integration/lyra_vqdq_chiplet_wrapper.v",
+        "description": "Chiplet integration wrapper with UCIe interface"
+      }
+    ],
+    "dependencies": [],
+    "toolRequirements": {
+      "synthesis": ["yosys", "openroad"],
+      "simulation": ["verilator", "icarus"],
+      "verification": ["cocotb"],
+      "chiplet": ["ucie_phy", "power_management", "thermal_analysis"]
+    },
+    "chiplet_integration": {
+      "protocols": ["UCIe", "AIB", "BoW"],
+      "power_management": "multi_domain",
+      "thermal_management": "active",
+      "clock_distribution": "hierarchical",
+      "reset_distribution": "asynchronous",
+      "test_access": "boundary_scan",
+      "debug": "jtag_interface"
+    }
+  },
+  "automation": {
+    "automation_level": "enhanced",
+    "ci_cd": {
+      "github_actions": true,
+      "automated_testing": true,
+      "automated_building": true
+    },
+    "code_quality": {
+      "linting": true,
+      "formatting": true,
+      "coverage": true
+    }
+  },
+  "categories": {
+    "primary": "signal_processing",
+    "secondary": ["digital", "neural_networks", "audio_codec", "chiplet"],
+    "tags": ["lyra", "vector_quantization", "neural_codec", "audio_compression", "systemverilog", "rtl", "verification", "cocotb", "synthesis", "openlane", "yosys", "chiplet", "ucie", "power_management", "thermal_management"]
+  },
+  "community": {
+    "issues": "https://github.com/vyges-org/lyra-vqdq-ip/issues",
+    "contributions": true,
+    "chat": "https://discord.gg/vyges"
+  },
+  "performance": {
+    "clock_frequency": {
+      "value": 200,
+      "unit": "MHz",
+      "description": "Maximum operating frequency"
+    },
+    "area": {
+      "value": 5000,
+      "unit": "um²",
+      "description": "Estimated silicon area"
+    },
+    "power": {
+      "value": 15,
+      "unit": "mW",
+      "description": "Typical power consumption"
+    },
+    "throughput": {
+      "value": 200,
+      "unit": "Mvectors/sec",
+      "description": "Vector processing throughput"
+    },
+    "latency": {
+      "value": 15,
+      "unit": "ns",
+      "description": "End-to-end latency"
+    }
+  },
+  "chiplet_performance": {
+    "communication": {
+      "bandwidth": {
+        "value": 1000,
+        "unit": "Gbps",
+        "description": "UCIe interface bandwidth"
+      },
+      "latency": {
+        "value": 100,
+        "unit": "ns",
+        "description": "Inter-chiplet communication latency"
+      },
+      "efficiency": {
+        "value": 95,
+        "unit": "%",
+        "description": "Protocol efficiency"
+      }
+    },
+    "power_efficiency": {
+      "active_to_standby": {
+        "value": 15,
+        "unit": "x",
+        "description": "Power reduction ratio"
+      },
+      "standby_to_sleep": {
+        "value": 10,
+        "unit": "x",
+        "description": "Power reduction ratio"
+      }
+    },
+    "thermal": {
+      "max_operating_temp": {
+        "value": 125,
+        "unit": "°C",
+        "description": "Maximum operating temperature"
+      },
+      "thermal_resistance": {
+        "value": 2.5,
+        "unit": "°C/W",
+        "description": "Thermal resistance to ambient"
+      }
+    }
+  }
+}
